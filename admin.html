@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم — إدارة حاسبة المطبخ</title>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;direction:rtl;background:#f0f2f5;min-height:100vh;color:#1a1a1a}
+
+/* ═══════════════════════════════════════════
+   TOPBAR
+   ═══════════════════════════════════════════ */
+.topbar{background:#0C447C;color:#fff;padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+.topbar-actions{display:flex;gap:8px}
+.btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s}
+.btn-primary{background:#378ADD;color:#fff}
+.btn-primary:hover{background:#2970C0}
+.btn-success{background:#2D8A4E;color:#fff}
+.btn-success:hover{background:#236B3D}
+.btn-danger{background:#C0392B;color:#fff;font-size:12px;padding:5px 10px}
+.btn-danger:hover{background:#A0281D}
+.btn-ghost{background:rgba(255,255,255,.15);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.25)}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════ */
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.sidebar{width:220px;background:#fff;border-left:0.5px solid #e0e0e0;padding:1rem 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sidebar-item{padding:10px 1.2rem;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;color:#444;border-right:3px solid transparent;transition:all .12s}
+.sidebar-item:hover{background:#f5f7fa;color:#0C447C}
+.sidebar-item.active{background:#E6F1FB;color:#0C447C;border-right-color:#378ADD;font-weight:600}
+.sidebar-sep{height:0.5px;background:#ebebeb;margin:8px 1rem}
+.sidebar-label{font-size:10px;color:#aaa;font-weight:600;padding:8px 1.2rem 4px;text-transform:uppercase;letter-spacing:.05em}
+.main{flex:1;padding:1.5rem;overflow-y:auto;max-width:calc(100vw - 220px)}
+
+/* ═══════════════════════════════════════════
+   PANELS
+   ═══════════════════════════════════════════ */
+.panel{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;margin-bottom:1.5rem;overflow:hidden;display:none}
+.panel.active{display:block}
+.panel-head{padding:14px 1.25rem;border-bottom:0.5px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:15px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px}
+.panel-body{padding:1.25rem}
+
+/* ═══════════════════════════════════════════
+   ITEM ROWS (Card Groups)
+   ═══════════════════════════════════════════ */
+.items-list{display:flex;flex-direction:column;gap:10px}
+.item-row{border:0.5px solid #e8e8e8;border-radius:10px;padding:12px;display:grid;grid-template-columns:52px 1fr 1fr 110px 100px 80px;gap:10px;align-items:center;background:#fafafa;transition:border-color .12s}
+.item-row:hover{border-color:#c0d0e8}
+.item-field{display:flex;flex-direction:column;gap:2px}
+.item-field label{font-size:10px;color:#888;font-weight:600}
+.item-field input,.item-field select{border:0.5px solid #ddd;border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;background:#fff;width:100%}
+.item-field input:focus,.item-field select:focus{outline:none;border-color:#378ADD}
+.item-field input[type="number"]{text-align:center}
+.item-field select{cursor:pointer}
+.badge-preview{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-top:4px}
+.eco{background:#EAF3DE;color:#3B6D11}
+.mid{background:#FAEEDA;color:#854F0B}
+.gd{background:#E6F1FB;color:#185FA5}
+.lux{background:#EEEDFE;color:#3C3489}
+
+/* ═══════════════════════════════════════════
+   ADD ROW
+   ═══════════════════════════════════════════ */
+.add-row{border:0.5px dashed #b0c8e8;border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:#378ADD;font-size:13px;font-weight:600;background:#F4F9FF;transition:background .12s}
+.add-row:hover{background:#E6F1FB}
+
+/* ═══════════════════════════════════════════
+   RADIO ROWS (Option Groups)
+   ═══════════════════════════════════════════ */
+.radio-items{display:flex;flex-direction:column;gap:8px}
+.radio-row{border:0.5px solid #e8e8e8;border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 110px 100px 80px;gap:10px;align-items:center;background:#fafafa}
+
+/* ═══════════════════════════════════════════
+   ADDON ROWS
+   ═══════════════════════════════════════════ */
+.addon-row{border:0.5px solid #e8e8e8;border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 110px 80px;gap:10px;align-items:center;background:#fafafa}
+
+/* ═══════════════════════════════════════════
+   METADATA / SETTINGS GRID
+   ═══════════════════════════════════════════ */
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.meta-field{display:flex;flex-direction:column;gap:4px}
+.meta-field label{font-size:11px;color:#555;font-weight:600}
+.meta-field input,.meta-field select{border:0.5px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit;background:#fff}
+.meta-field input:focus,.meta-field select:focus{outline:none;border-color:#378ADD}
+.meta-field small{font-size:11px;color:#888}
+
+/* ═══════════════════════════════════════════
+   STEP LABELS EDITOR
+   ═══════════════════════════════════════════ */
+.labels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+
+/* ═══════════════════════════════════════════
+   STATS
+   ═══════════════════════════════════════════ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem 1.25rem}
+.stat-num{font-size:24px;font-weight:700;color:#185FA5}
+.stat-label{font-size:12px;color:#888;margin-top:2px}
+
+/* ═══════════════════════════════════════════
+   EXPORT BOXES
+   ═══════════════════════════════════════════ */
+.export-box{background:#E6F1FB;border:0.5px solid #b0cce8;border-radius:12px;padding:1.25rem}
+.export-box h3{font-size:14px;font-weight:600;color:#0C447C;margin-bottom:8px}
+.export-box p{font-size:12px;color:#555;line-height:1.6;margin-bottom:12px}
+.export-steps{list-style:none;font-size:12px;color:#444;line-height:2}
+.export-steps li::before{content:"\2713 ";color:#2D8A4E;font-weight:700}
+
+/* ═══════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════ */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* ═══════════════════════════════════════════
+   HIDDEN FILE INPUT
+   ═══════════════════════════════════════════ */
+input[type=file]{display:none}
+
+/* ═══════════════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════════════ */
+@media(max-width:768px){
+  .sidebar{width:100%;position:relative;height:auto;top:0}
+  .layout{flex-direction:column}
+  .main{max-width:100%}
+  .item-row{grid-template-columns:1fr 1fr;gap:8px}
+  .radio-row{grid-template-columns:1fr 1fr}
+  .addon-row{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ═══════════════════════════════════════════
+   IMAGE THUMBNAIL & MODAL
+   ═══════════════════════════════════════════ */
+.item-thumb{width:48px;height:36px;border-radius:6px;object-fit:cover;background:#eee;border:0.5px solid #ddd;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.item-thumb img{width:100%;height:100%;object-fit:cover}
+.item-thumb svg{width:100%;height:100%}
+.thumb-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-size:10px;font-weight:600}
+.item-thumb:hover .thumb-overlay{display:flex}
+
+/* Modal styles */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:340px;max-width:94vw}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:1rem}
+.modal-btns{display:flex;gap:8px;margin-top:1rem}
+.img-preview{width:100%;height:140px;border-radius:8px;border:0.5px solid #ddd;object-fit:cover;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:12px;margin-bottom:10px;overflow:hidden}
+.img-preview img{width:100%;height:100%;object-fit:cover}
+.url-input{width:100%;border:0.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.url-input:focus{outline:none;border-color:#378ADD}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     TOPBAR
+     ═══════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="topbar-title">&#x2699;&#xFE0F; لوحة تحكم — حاسبة المطبخ</div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="importConfig()">&#x1F4C2; استيراد</button>
+    <button class="btn btn-success" onclick="exportConfig()">&#x1F4BE; حفظ الإعدادات (kitchen-config.json)</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYOUT
+     ═══════════════════════════════════════════ -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-label">عام</div>
+    <div class="sidebar-item active" onclick="showPanel('dashboard',this)">&#x1F4CA; لوحة البيانات</div>
+    <div class="sidebar-item" onclick="showPanel('metadata',this)">&#x2696;&#xFE0F; الإعدادات العامة</div>
+    <div class="sidebar-item" onclick="showPanel('labels',this)">&#x1F3F7;&#xFE0F; أسماء الخطوات</div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-label">المواد</div>
+    <div class="sidebar-item" onclick="showPanel('wood',this)">&#x1FAB5; الهيكل الداخلي</div>
+    <div class="sidebar-item" onclick="showPanel('door',this)">&#x1F6AA; واجهة الأبواب</div>
+    <div class="sidebar-item" onclick="showPanel('counter',this)">&#x1F5FF; سطح العمل</div>
+    <div class="sidebar-item" onclick="showPanel('acc',this)">&#x1F529; المفصلات والسحاب</div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-label">الخيارات</div>
+    <div class="sidebar-item" onclick="showPanel('height',this)">&#x1F4D0; الارتفاع والسقف</div>
+    <div class="sidebar-item" onclick="showPanel('handle',this)">&#x1FAF1; المقابض</div>
+    <div class="sidebar-item" onclick="showPanel('light',this)">&#x1F4A1; الإضاءة</div>
+    <div class="sidebar-item" onclick="showPanel('finish',this)">&#x2702;&#xFE0F; تشطيب السطح</div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-label">الأجهزة</div>
+    <div class="sidebar-item" onclick="showPanel('addons',this)">&#x1F527; الأجهزة والإكسسوار</div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-item" onclick="showPanel('export',this)">&#x1F4E4; التصدير والاستيراد</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="panel-head"><span class="panel-title">&#x1F4CA; لوحة البيانات</span></div>
+      <div class="panel-body">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="export-box">
+          <h3>&#x1F4A1; كيف يعمل النظام؟</h3>
+          <p>هذه اللوحة تتيح لك تعديل كل بيانات حاسبة المطبخ بدون لمس الكود. بعد الانتهاء:</p>
+          <ul class="export-steps">
+            <li>عدّل الأسعار والأسماء والأوصاف من القوائم الجانبية</li>
+            <li>اضبط الإعدادات العامة (نسبة التركيب، مضاعف الوحدات العلوية...)</li>
+            <li>اضغط <strong>"حفظ الإعدادات"</strong> للحصول على ملف <code>kitchen-config.json</code></li>
+            <li>استبدل الملف القديم على الاستضافة — الحاسبة تقرأه تلقائياً</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ METADATA ═══ -->
+    <div class="panel" id="panel-metadata">
+      <div class="panel-head"><span class="panel-title">&#x2696;&#xFE0F; الإعدادات العامة</span></div>
+      <div class="panel-body">
+        <p style="font-size:12px;color:#888;margin-bottom:12px">هذه الإعدادات تؤثر على طريقة حساب السعر في الحاسبة.</p>
+        <div class="meta-grid" id="meta-grid"></div>
+        <div style="margin-top:1rem;padding:10px;background:#FFF8F0;border-radius:8px;font-size:12px;color:#854F0B">
+          <strong>ملاحظة:</strong> بعد تعديل هذه القيم، اضغط "حفظ الإعدادات" لحفظها في ملف JSON.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STEP LABELS ═══ -->
+    <div class="panel" id="panel-labels">
+      <div class="panel-head"><span class="panel-title">&#x1F3F7;&#xFE0F; أسماء خطوات المعالج</span></div>
+      <div class="panel-body">
+        <p style="font-size:12px;color:#888;margin-bottom:12px">الأسماء التي تظهر في شريط التقدم أعلى الحاسبة.</p>
+        <div class="labels-grid" id="labels-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ CARD GROUPS ═══ -->
+    <div class="panel" id="panel-wood">
+      <div class="panel-head">
+        <span class="panel-title">&#x1FAB5; الهيكل الداخلي (الكاركاس)</span>
+        <button class="btn btn-primary btn-sm" onclick="addItem('wood')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="items-list" id="list-wood"></div></div>
+    </div>
+
+    <div class="panel" id="panel-door">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F6AA; واجهة الأبواب</span>
+        <button class="btn btn-primary btn-sm" onclick="addItem('door')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="items-list" id="list-door"></div></div>
+    </div>
+
+    <div class="panel" id="panel-counter">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F5FF; سطح العمل (الكاونتر)</span>
+        <button class="btn btn-primary btn-sm" onclick="addItem('counter')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="items-list" id="list-counter"></div></div>
+    </div>
+
+    <div class="panel" id="panel-acc">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F529; المفصلات والسحاب</span>
+        <button class="btn btn-primary btn-sm" onclick="addItem('acc')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="items-list" id="list-acc"></div></div>
+    </div>
+
+    <!-- ═══ RADIO GROUPS ═══ -->
+    <div class="panel" id="panel-height">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F4D0; الارتفاع وتقفيل السقف</span>
+        <button class="btn btn-primary btn-sm" onclick="addRadio('height')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="radio-items" id="list-height"></div></div>
+    </div>
+
+    <div class="panel" id="panel-handle">
+      <div class="panel-head">
+        <span class="panel-title">&#x1FAF1; نظام فتح الأبواب والمقابض</span>
+        <button class="btn btn-primary btn-sm" onclick="addRadio('handle')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="radio-items" id="list-handle"></div></div>
+    </div>
+
+    <div class="panel" id="panel-light">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F4A1; الإضاءة المخفية</span>
+        <button class="btn btn-primary btn-sm" onclick="addRadio('light')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="radio-items" id="list-light"></div></div>
+    </div>
+
+    <div class="panel" id="panel-finish">
+      <div class="panel-head">
+        <span class="panel-title">&#x2702;&#xFE0F; تشطيب وتقفيل سطح العمل</span>
+        <button class="btn btn-primary btn-sm" onclick="addRadio('finish')">+ إضافة خيار</button>
+      </div>
+      <div class="panel-body"><div class="radio-items" id="list-finish"></div></div>
+    </div>
+
+    <!-- ═══ ADDONS ═══ -->
+    <div class="panel" id="panel-addons">
+      <div class="panel-head">
+        <span class="panel-title">&#x1F527; الأجهزة والإكسسوار (بالحبة)</span>
+        <button class="btn btn-primary btn-sm" onclick="addAddon()">+ إضافة عنصر</button>
+      </div>
+      <div class="panel-body"><div class="items-list" id="list-addons"></div></div>
+    </div>
+
+    <!-- ═══ EXPORT / IMPORT ═══ -->
+    <div class="panel" id="panel-export">
+      <div class="panel-head"><span class="panel-title">&#x1F4E4; التصدير والاستيراد</span></div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="export-box">
+            <h3>&#x1F4BE; حفظ الإعدادات</h3>
+            <p>يصدّر ملف <strong>kitchen-config.json</strong> يحتوي على جميع الأسعار والأسماء والأوصاف. استبدل الملف على الاستضافة.</p>
+            <button class="btn btn-success" onclick="exportConfig()" style="width:100%">&#x1F4BE; تصدير kitchen-config.json</button>
+          </div>
+          <div class="export-box" style="background:#FFF8F0;border-color:#e8c88a">
+            <h3>&#x1F4C2; استيراد إعدادات</h3>
+            <p>حمّل ملف kitchen-config.json سبق تصديره لاستعادة الإعدادات أو تعديلها.</p>
+            <button class="btn btn-primary" onclick="importConfig()" style="width:100%">&#x1F4C2; استيراد ملف JSON</button>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <div class="export-box" style="background:#F0FFF4;border-color:#90d8a8">
+            <h3>&#x1F504; كيفية التحديث على الاستضافة</h3>
+            <p style="margin-bottom:8px">الحاسبة تبحث تلقائياً عن ملف <strong>kitchen-config.json</strong> في نفس المجلد. لتحديث الأسعار:</p>
+            <ul class="export-steps">
+              <li>عدّل الإعدادات في هذه اللوحة</li>
+              <li>اضغط <strong>"حفظ الإعدادات"</strong> لتحميل الملف الجديد</li>
+              <li>استبدل الملف القديم بـ FTP / cPanel / Git</li>
+              <li>الحاسبة تقرأ الإعدادات الجديدة فور تحديث الصفحة</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     IMAGE MODAL
+     ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="img-modal">
+  <div class="modal">
+    <h3>&#x1F5BC; تحديث صورة المادة</h3>
+    <div class="img-preview" id="modal-preview">لا توجد صورة</div>
+    <div style="margin-bottom:8px;font-size:12px;color:#555;font-weight:600">رابط الصورة (URL):</div>
+    <input type="text" class="url-input" id="modal-url" placeholder="https://..." oninput="previewModalImg()">
+    <div style="margin-top:8px;font-size:12px;color:#888">— أو —</div>
+    <button class="btn btn-ghost" style="background:#f0f0f0;color:#444;width:100%;margin-top:8px" onclick="document.getElementById('file-input').click()">&#x1F4C1; رفع صورة من الجهاز</button>
+    <input type="file" id="file-input" accept="image/*" onchange="handleFileUpload(event)">
+    <div class="modal-btns">
+      <button class="btn btn-primary" style="flex:1" onclick="applyImg()">&#x2713; تطبيق</button>
+      <button class="btn" style="background:#f0f0f0;color:#444;flex:1" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TOAST + FILE INPUT
+     ═══════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+<input type="file" id="import-file" accept=".json" onchange="handleImport(event)">
+
+<script>
+/* ##############################################################
+   ADMIN DASHBOARD — DYNAMIC CONFIG VERSION
+   Loads & edits kitchen-config.json
+   ############################################################## */
+
+// ═══════════════════════════════════════════════
+//  DEFAULT CONFIG (fallback if file not found)
+// ═══════════════════════════════════════════════
+const DEFAULT_CONFIG = {
+  "_comment": "Kitchen Calculator Configuration",
+  "version": "1.0",
+  "metadata": {
+    "currencyCode": "OMR",
+    "currencyLabel": "ر.ع",
+    "currencyLabelLong": "ريال عُماني",
+    "installPercent": 12,
+    "upperCabinetMultiplier": 0.75,
+    "counterDepth": 0.65,
+    "defaultLowerLength": 3.0,
+    "defaultUpperLength": 3.0,
+    "lowerLengthMin": 1,
+    "lowerLengthMax": 12,
+    "lowerLengthStep": 0.5,
+    "upperLengthMin": 0,
+    "upperLengthMax": 12,
+    "upperLengthStep": 0.5
+  },
+  "steps": [
+    {"id":"structure","title":"الهيكل الداخلي (الكاركاس)","subtitle":"اختر مادة هيكل الخزائن — السعر بالمتر الطولي","sections":[{"id":"wood","label":"","type":"cards","priceUnit":"م","selectionMode":"single"},{"id":"door","label":"واجهة الأبواب","type":"cards","priceUnit":"م","selectionMode":"single","priceNote":"extra"}]},
+    {"id":"countertop","title":"سطح العمل (الكاونتر)","subtitle":"اختر مادة سطح العمل — السعر بالمتر المربع","sections":[{"id":"counter","label":"","type":"cards","priceUnit":"م²","selectionMode":"single"},{"id":"finish","label":"تشطيب حافة سطح العمل","type":"cards","priceUnit":"م","selectionMode":"single"}]},
+    {"id":"accessories","title":"الملحقات والأنظمة","subtitle":"المفصلات، المقابض، الارتفاع، والإضاءة","sections":[{"id":"acc","label":"المفصلات والسحاب","type":"cards","priceUnit":"م","selectionMode":"single"},{"id":"handle","label":"نظام فتح الأبواب والمقابض","type":"cards","priceUnit":"م","selectionMode":"single"},{"id":"height","label":"الارتفاع وتقفيل السقف","type":"cards","priceUnit":"م","selectionMode":"single"},{"id":"light","label":"الإضاءة المخفية (الوحدات العلوية)","type":"cards","priceUnit":"م","selectionMode":"single"}]},
+    {"id":"addons","title":"الأجهزة المدمجة والإضافات","subtitle":"اختر الأجهزة والملحقات — أدخل الكميات","sections":[{"id":"addonItems","label":"","type":"addons","selectionMode":"quantity"},{"id":"dimensions","label":"المقاسات","type":"dimensions"}]},
+    {"id":"review","title":"ملخص عرض السعر","subtitle":"مراجعة جميع الاختيارات — السعر التقديري النهائي","sections":[]}
+  ],
+  "stepLabels": ["الهيكل والأبواب","سطح العمل","الملحقات","الأجهزة","المراجعة"],
+  "tierThresholds": {"eco":{"max":25,"label":"اقتصادي","class":"eco"},"mid":{"max":50,"label":"متوسط","class":"mid"},"gd":{"max":75,"label":"جيد / متميز","class":"gd"},"lux":{"max":100,"label":"فاخر","class":"lux"}},
+  "wood": [
+    {"id":"chip","name":"شيب بورد","desc":"جزيئات خشب مضغوطة — الأوفر","price":35,"badge":"eco","swatch":"p-chip"},
+    {"id":"mdf","name":"MDF عادي","desc":"ألياف مضغوطة — للأماكن الجافة","price":45,"badge":"eco","swatch":"p-mdf"},
+    {"id":"mdf_w","name":"MDF مقاوم للماء","desc":"طبقة حماية — عمر أطول","price":65,"badge":"mid","swatch":"p-mdf_w"},
+    {"id":"hdf","name":"HDF عالي الكثافة","desc":"كثافة عالية — يتحمل الرطوبة","price":85,"badge":"gd","swatch":"p-hdf"},
+    {"id":"ply","name":"بلايوود","desc":"طبقات متعاكسة — مقاوم للمياه","price":110,"badge":"gd","swatch":"p-ply"},
+    {"id":"solid","name":"خشب صلب طبيعي","desc":"فخامة ومتانة — الأعلى سعراً","price":160,"badge":"lux","swatch":"p-solid"}
+  ],
+  "door": [
+    {"id":"melamine","name":"ميلامين مطفي","desc":"هادئ وعصري — ألوان سادة","price":0,"badge":"eco","swatch":"p-melamine","priceNote":"مشمول"},
+    {"id":"pvc","name":"PVC محفور","desc":"كلاسيكي / ريفي — حفر بارز","price":55,"badge":"mid","swatch":"p-pvc"},
+    {"id":"hpl","name":"HPL لامينيت","desc":"مقاوم للخدش والحرارة والرطوبة","price":65,"badge":"gd","swatch":"p-hpl"},
+    {"id":"acrylic","name":"أكريليك لامع/مطفي","desc":"مقفل بالليزر — عاكس للضوء","price":75,"badge":"gd","swatch":"p-acrylic"},
+    {"id":"glass","name":"زجاج","desc":"إطار ألومنيوم — شفاف أو مطفي","price":100,"badge":"lux","swatch":"p-glass"},
+    {"id":"veneer","name":"فينير خشبي","desc":"قشرة طبيعية — عروق دافئة","price":120,"badge":"lux","swatch":"p-veneer"}
+  ],
+  "counter": [
+    {"id":"gran_l","name":"جرانيت محلي","desc":"يتحمل الحرارة — ألوان محدودة","price":40,"badge":"eco","swatch":"p-gran-l"},
+    {"id":"gran_i","name":"جرانيت مستورد","desc":"ألوان أرقى — مصادر عالمية","price":75,"badge":"mid","swatch":"p-gran-i"},
+    {"id":"quartz","name":"كوارتز","desc":"غير مسامي — يحاكي الرخام","price":110,"badge":"gd","swatch":"p-quartz"},
+    {"id":"porce","name":"بورسلان","desc":"مقاوم تماماً — سطح نحيف عصري","price":200,"badge":"lux","swatch":"p-porce"},
+    {"id":"corian","name":"كوريان","desc":"بدون فواصل — مغسلة مدمجة","price":220,"badge":"lux","swatch":"p-corian"},
+    {"id":"marble","name":"رخام طبيعي","desc":"عروق فريدة — يحتاج عناية","price":270,"badge":"lux","swatch":"p-marble"}
+  ],
+  "acc": [
+    {"id":"a0","name":"إكسسوار صيني تجاري","desc":"مفصلات بدون هيدروليك","price":0,"badge":"eco","swatch":"p-acc0","priceNote":"مشمول"},
+    {"id":"a1","name":"DTC صيني معتمد","desc":"Soft-close معتمد","price":6,"badge":"eco","swatch":"p-acc1"},
+    {"id":"a2","name":"Samet تركي","desc":"هيدروليك تركي أصلي","price":10,"badge":"mid","swatch":"p-acc2"},
+    {"id":"a3","name":"Hettich ألماني","desc":"إغلاق صامت طويل الأمد","price":25,"badge":"gd","swatch":"p-acc3"},
+    {"id":"a4","name":"Blum نمساوي","desc":"قضبان مخفية هيدروليكية","price":60,"badge":"lux","swatch":"p-acc4"},
+    {"id":"a5","name":"Blum منظومة كاملة","desc":"Aventos + Legrabox كاملة","price":120,"badge":"lux","swatch":"p-acc5"}
+  ],
+  "height": [
+    {"id":"h_std","name":"ارتفاع قياسي (80 سم)","desc":"مشمول في السعر الأساسي","price":0,"badge":"eco","priceNote":"مشمول"},
+    {"id":"h_ext","name":"ارتفاع ممتد (90–100 سم)","desc":"تطويل الأبواب العلوية","price":20,"badge":"mid"},
+    {"id":"h_full","name":"تقفيل كامل للسقف","desc":"طابق إضافي — مودرن","price":50,"badge":"lux"}
+  ],
+  "handle": [
+    {"id":"ha_std","name":"مقابض خارجية تقليدية","desc":"براغي على وجه الباب","price":0,"badge":"eco","priceNote":"مشمول"},
+    {"id":"ha_gola","name":"Gola مخفية ألومنيوم","desc":"مجرى مدمج في الهيكل","price":10,"badge":"mid"},
+    {"id":"ha_push","name":"Push to Open","desc":"تفتح بلمسة — بدون مقبض","price":18,"badge":"gd"}
+  ],
+  "light": [
+    {"id":"l_none","name":"بدون إضاءة","desc":"—","price":0,"badge":"eco","priceNote":"مشمول"},
+    {"id":"l_led","name":"LED مع بروفايل ألومنيوم","desc":"إنارة سطح العمل","price":8,"badge":"mid"},
+    {"id":"l_smart","name":"LED ذكية بحساس","desc":"تضيء تلقائياً بالحركة","price":15,"badge":"gd"}
+  ],
+  "finish": [
+    {"id":"f_none","name":"بدون إضافات","desc":"حافة قياسية مشمولة","price":0,"badge":"eco","priceNote":"مشمول"},
+    {"id":"f_bull","name":"Double Bullnose","desc":"حافة دائرية ناعمة","price":5,"badge":"mid"},
+    {"id":"f_45","name":"شطف 45° ليزر","desc":"حافة مخفية فاخرة","price":10,"badge":"gd"},
+    {"id":"f_back","name":"Backsplash (60 سم)","desc":"الرخام يصعد لتغطية الجدار","price":50,"badge":"lux"}
+  ],
+  "addons": [
+    {"id":"oven_eco","name":"فرن مدمج — اقتصادي","sub":"تركي / صيني","price":130},
+    {"id":"oven_mid","name":"فرن مدمج — متوسط","sub":"إيطالي / براند معروف","price":220},
+    {"id":"oven_lux","name":"فرن مدمج — فاخر","sub":"Bosch / Miele","price":450},
+    {"id":"hob_eco","name":"سطح طبخ — 4 شعلات غاز","sub":"اقتصادي","price":80},
+    {"id":"hob_mid","name":"سطح طبخ — 5 شعلات / سيراميك","sub":"متوسط","price":170},
+    {"id":"hob_lux","name":"سطح طبخ — سيراميك ذكي","sub":"فاخر","price":380},
+    {"id":"hood_und","name":"شفاط Under-cabinet","sub":"كلاسيكي","price":65},
+    {"id":"hood_t","name":"شفاط ديكوري T-Shape","sub":"زجاجي / حائط","price":140},
+    {"id":"hood_isl","name":"شفاط جزيرة Island Hood","sub":"معلق وسطي","price":290},
+    {"id":"dw_semi","name":"غسالة صحون شبه مدمجة","sub":"لوحة تحكم ظاهرة","price":190},
+    {"id":"dw_full","name":"غسالة صحون مدمجة كاملاً","sub":"مخفية وراء الباب","price":340},
+    {"id":"mw","name":"ميكروويف مدمج","sub":"متوسط إلى فاخر","price":150},
+    {"id":"corner_lem","name":"سلة زاوية LeMans","sub":"نصف دائرية","price":50},
+    {"id":"corner_mag","name":"زاوية Magic Corner","sub":"سحب كامل للخارج","price":90},
+    {"id":"pantry","name":"صيدلية مؤونة Pantry","sub":"5-6 سلال طولية","price":180},
+    {"id":"spice","name":"سلة زجاجات / بهارات","sub":"درج نحيف جانب الفرن","price":35},
+    {"id":"bin","name":"سلة مهملات مزدوجة","sub":"تخرج مع الباب","price":40},
+    {"id":"org_plas","name":"مقسم أدراج — بلاستيك","sub":"ملاعق وأدوات","price":12},
+    {"id":"org_wood","name":"مقسم أدراج — خشب / ألومنيوم","sub":"فاخر قابل للتعديل","price":35}
+  ]
+};
+
+// ═══════════════════════════════════════════════
+//  GLOBAL STATE
+// ═══════════════════════════════════════════════
+let DATA = null;
+
+const CARD_GROUPS = ['wood','door','counter','acc'];
+const RADIO_GROUPS = ['height','handle','light','finish'];
+const BADGE_LABELS = { eco:'اقتصادي', mid:'متوسط', gd:'جيد', lux:'فاخر' };
+const SWATCH_OPTIONS = [
+  {value:'',label:'بدون'},
+  {value:'p-chip',label:'شيب بورد'},
+  {value:'p-mdf',label:'MDF عادي'},
+  {value:'p-mdf_w',label:'MDF مقاوم'},
+  {value:'p-hdf',label:'HDF'},
+  {value:'p-ply',label:'بلايوود'},
+  {value:'p-solid',label:'خشب صلب'},
+  {value:'p-melamine',label:'ميلامين'},
+  {value:'p-pvc',label:'PVC'},
+  {value:'p-hpl',label:'HPL'},
+  {value:'p-acrylic',label:'أكريليك'},
+  {value:'p-glass',label:'زجاج'},
+  {value:'p-veneer',label:'فينير'},
+  {value:'p-gran-l',label:'جرانيت محلي'},
+  {value:'p-gran-i',label:'جرانيت مستورد'},
+  {value:'p-quartz',label:'كوارتز'},
+  {value:'p-porce',label:'بورسلان'},
+  {value:'p-corian',label:'كوريان'},
+  {value:'p-marble',label:'رخام'},
+  {value:'p-acc0',label:'إكسسوار 0'},
+  {value:'p-acc1',label:'إكسسوار 1'},
+  {value:'p-acc2',label:'إكسسوار 2'},
+  {value:'p-acc3',label:'إكسسوار 3'},
+  {value:'p-acc4',label:'إكسسوار 4'},
+  {value:'p-acc5',label:'إكسسوار 5'}
+];
+
+// ═══════════════════════════════════════════════
+//  INIT — Load config on startup
+// ═══════════════════════════════════════════════
+async function init() {
+  try {
+    const res = await fetch('kitchen-config.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = await res.json();
+    toast('تم تحميل الإعدادات من kitchen-config.json');
+  } catch (err) {
+    DATA = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    toast('جاري استخدام الإعدادات الافتراضية — اضغط حفظ لإنشاء الملف');
+  }
+  ensureDataStructure();
+  renderAll();
+}
+
+function ensureDataStructure() {
+  // Ensure all required keys exist
+  if (!DATA.metadata) DATA.metadata = DEFAULT_CONFIG.metadata;
+  if (!DATA.steps) DATA.steps = DEFAULT_CONFIG.steps;
+  if (!DATA.stepLabels) DATA.stepLabels = DEFAULT_CONFIG.stepLabels;
+  if (!DATA.tierThresholds) DATA.tierThresholds = DEFAULT_CONFIG.tierThresholds;
+  CARD_GROUPS.forEach(g => { if (!DATA[g]) DATA[g] = []; });
+  RADIO_GROUPS.forEach(g => { if (!DATA[g]) DATA[g] = []; });
+  if (!DATA.addons) DATA.addons = [];
+  // Ensure all card group items have img field (for admin photo upload)
+  CARD_GROUPS.forEach(g => {
+    (DATA[g] || []).forEach(item => {
+      if (item.img === undefined) item.img = '';
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  if (el) el.classList.add('active');
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════
+function renderAll() {
+  CARD_GROUPS.forEach(g => renderCardGroup(g));
+  RADIO_GROUPS.forEach(g => renderRadioGroup(g));
+  renderAddons();
+  renderStats();
+  renderMetadata();
+  renderLabels();
+}
+
+// ═══════════════════════════════════════════════
+//  CARD GROUPS RENDERER
+// ═══════════════════════════════════════════════
+function renderCardGroup(g) {
+  const el = document.getElementById('list-' + g);
+  if (!el) return;
+  const isCounter = g === 'counter';
+  const unit = isCounter ? 'م²' : 'م';
+
+  el.innerHTML = (DATA[g] || []).map((item, i) => `
+    <div class="item-row">
+      <div class="item-thumb" onclick="openImgModal('${g}',${i})">
+        ${item.img
+          ? `<img src="${item.img}" alt="">`
+          : `<svg viewBox="0 0 52 40" xmlns="http://www.w3.org/2000/svg"><rect width="52" height="40" fill="#eee"/><text x="26" y="24" text-anchor="middle" font-size="9" fill="#aaa">صورة</text></svg>`}
+        <div class="thumb-overlay">تغيير</div>
+      </div>
+      <div class="item-field">
+        <label>الاسم</label>
+        <input value="${esc(item.name)}" oninput="DATA.${g}[${i}].name=this.value;renderStats()">
+      </div>
+      <div class="item-field">
+        <label>الوصف</label>
+        <input value="${esc(item.desc||'')}" oninput="DATA.${g}[${i}].desc=this.value">
+      </div>
+      <div class="item-field">
+        <label>السعر (ر.ع${' / '+unit})</label>
+        <input type="number" min="0" step="1" value="${item.price}" oninput="DATA.${g}[${i}].price=+this.value;renderStats()">
+      </div>
+      <div class="item-field">
+        <label>الفئة</label>
+        <select onchange="DATA.${g}[${i}].badge=this.value;renderCardGroup('${g}')">
+          ${['eco','mid','gd','lux'].map(b => `<option value="${b}"${item.badge===b?' selected':''}>${BADGE_LABELS[b]}</option>`).join('')}
+        </select>
+        <span class="badge-preview ${item.badge||'eco'}">${BADGE_LABELS[item.badge]||item.badge||''}</span>
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-danger" onclick="removeItem('${g}',${i})">&#x1F5D1; حذف</button>
+      </div>
+    </div>`).join('') +
+    `<div class="add-row" onclick="addItem('${g}')">+ إضافة خيار جديد</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  RADIO GROUPS RENDERER
+// ═══════════════════════════════════════════════
+function renderRadioGroup(g) {
+  const el = document.getElementById('list-' + g);
+  if (!el) return;
+
+  el.innerHTML = (DATA[g] || []).map((item, i) => `
+    <div class="radio-row">
+      <div class="item-field">
+        <label>الاسم</label>
+        <input value="${esc(item.name)}" oninput="DATA.${g}[${i}].name=this.value">
+      </div>
+      <div class="item-field">
+        <label>الوصف</label>
+        <input value="${esc(item.desc||'')}" oninput="DATA.${g}[${i}].desc=this.value">
+      </div>
+      <div class="item-field">
+        <label>السعر (ر.ع / م)</label>
+        <input type="number" min="0" step="1" value="${item.price}" oninput="DATA.${g}[${i}].price=+this.value">
+      </div>
+      <div class="item-field">
+        <label>الفئة</label>
+        <select onchange="DATA.${g}[${i}].badge=this.value">
+          ${['eco','mid','gd','lux'].map(b => `<option value="${b}"${item.badge===b?' selected':''}>${BADGE_LABELS[b]}</option>`).join('')}
+        </select>
+      </div>
+      <div style="text-align:center">
+        ${(DATA[g] || []).length > 1 ? `<button class="btn btn-danger" onclick="removeRadio('${g}',${i})">&#x1F5D1;</button>` : ''}
+      </div>
+    </div>`).join('') +
+    `<div class="add-row" onclick="addRadio('${g}')">+ إضافة خيار جديد</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  ADDONS RENDERER
+// ═══════════════════════════════════════════════
+function renderAddons() {
+  const el = document.getElementById('list-addons');
+  if (!el) return;
+
+  el.innerHTML = (DATA.addons || []).map((item, i) => `
+    <div class="addon-row">
+      <div class="item-field">
+        <label>الاسم</label>
+        <input value="${esc(item.name)}" oninput="DATA.addons[${i}].name=this.value">
+      </div>
+      <div class="item-field">
+        <label>الوصف / الماركة</label>
+        <input value="${esc(item.sub||'')}" oninput="DATA.addons[${i}].sub=this.value">
+      </div>
+      <div class="item-field">
+        <label>السعر (ر.ع / حبة)</label>
+        <input type="number" min="0" value="${item.price}" oninput="DATA.addons[${i}].price=+this.value">
+      </div>
+      <div style="text-align:center">
+        <button class="btn btn-danger" onclick="removeAddon(${i})">&#x1F5D1; حذف</button>
+      </div>
+    </div>`).join('') +
+    `<div class="add-row" onclick="addAddon()">+ إضافة عنصر جديد</div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  METADATA RENDERER
+// ═══════════════════════════════════════════════
+function renderMetadata() {
+  const el = document.getElementById('meta-grid');
+  if (!el) return;
+  const m = DATA.metadata || {};
+
+  const fields = [
+    { key:'currencyLabel', label:'رمز العملة', type:'text', hint:'مثال: ر.ع' },
+    { key:'currencyLabelLong', label:'اسم العملة الكامل', type:'text', hint:'مثال: ريال عُماني' },
+    { key:'installPercent', label:'نسبة التركيب (%)', type:'number', hint:'النسبة المئوية لقيمة الخزائن' },
+    { key:'upperCabinetMultiplier', label:'مضاعف الوحدات العلوية', type:'number', step:'0.01', hint:'0.75 = 75% من سعر السفلية' },
+    { key:'counterDepth', label:'عمق سطح العمل (متر)', type:'number', step:'0.01', hint:'0.65 = 65 سم' },
+    { key:'defaultLowerLength', label:'الطول الافتراضي للسفلية', type:'number', step:'0.5', hint:'بالأمتار' },
+    { key:'defaultUpperLength', label:'الطول الافتراضي للعلوية', type:'number', step:'0.5', hint:'بالأمتار' },
+  ];
+
+  el.innerHTML = fields.map(f => `
+    <div class="meta-field">
+      <label>${f.label}</label>
+      <input type="${f.type}" value="${m[f.key] !== undefined ? m[f.key] : ''}" step="${f.step||''}"
+        oninput="DATA.metadata['${f.key}']=${f.type==='number'?'+':''}this.value;renderStats()">
+      <small>${f.hint}</small>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  STEP LABELS RENDERER
+// ═══════════════════════════════════════════════
+function renderLabels() {
+  const el = document.getElementById('labels-grid');
+  if (!el) return;
+  const labels = DATA.stepLabels || [];
+
+  el.innerHTML = labels.map((lbl, i) => `
+    <div class="meta-field">
+      <label>الخطوة ${i+1}</label>
+      <input value="${esc(lbl)}" oninput="DATA.stepLabels[${i}]=this.value">
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════════
+function renderStats() {
+  const el = document.getElementById('stats-grid');
+  if (!el) return;
+
+  const totalItems = CARD_GROUPS.reduce((s, g) => s + (DATA[g] || []).length, 0) + (DATA.addons || []).length;
+  const woodItems = DATA.wood || [];
+  const doorItems = DATA.door || [];
+  const minPrice = (woodItems[0]?.price||0) + (doorItems[0]?.price||0);
+  const maxWood = woodItems.reduce((m, i) => Math.max(m, i.price||0), 0);
+  const maxDoor = doorItems.reduce((m, i) => Math.max(m, i.price||0), 0);
+  const maxPrice = maxWood + maxDoor;
+  const installPct = DATA.metadata?.installPercent ?? 12;
+  const upperMult = DATA.metadata?.upperCabinetMultiplier ?? 0.75;
+
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${totalItems}</div><div class="stat-label">إجمالي الخيارات</div></div>
+    <div class="stat-card"><div class="stat-num">${installPct}%</div><div class="stat-label">نسبة التركيب</div></div>
+    <div class="stat-card"><div class="stat-num">${minPrice} ر.ع</div><div class="stat-label">أقل سعر متر طولي</div></div>
+    <div class="stat-card"><div class="stat-num">${maxPrice} ر.ع</div><div class="stat-label">أعلى سعر متر طولي</div></div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  ADD / REMOVE — Card Groups
+// ═══════════════════════════════════════════════
+function addItem(g) {
+  const newId = g + '_' + Date.now();
+  DATA[g].push({ id:newId, name:'خيار جديد', desc:'', price:0, badge:'eco', swatch:'', img:'' });
+  renderCardGroup(g);
+  renderStats();
+  toast('تمت الإضافة \u2713');
+}
+function removeItem(g, i) {
+  if (DATA[g].length <= 1) { toast('لا يمكن حذف الخيار الوحيد'); return; }
+  DATA[g].splice(i, 1);
+  renderCardGroup(g);
+  renderStats();
+  toast('تم الحذف');
+}
+
+// ═══════════════════════════════════════════════
+//  ADD / REMOVE — Radio Groups
+// ═══════════════════════════════════════════════
+function addRadio(g) {
+  const newId = g + '_' + Date.now();
+  DATA[g].push({ id:newId, name:'خيار جديد', desc:'', price:0, badge:'eco' });
+  renderRadioGroup(g);
+  toast('تمت الإضافة \u2713');
+}
+function removeRadio(g, i) {
+  if (DATA[g].length <= 1) { toast('لا يمكن حذف الخيار الوحيد'); return; }
+  DATA[g].splice(i, 1);
+  renderRadioGroup(g);
+  toast('تم الحذف');
+}
+
+// ═══════════════════════════════════════════════
+//  ADD / REMOVE — Addons
+// ═══════════════════════════════════════════════
+function addAddon() {
+  DATA.addons.push({ id:'addon_'+Date.now(), name:'عنصر جديد', sub:'', price:0 });
+  renderAddons();
+  toast('تمت الإضافة \u2713');
+}
+function removeAddon(i) {
+  DATA.addons.splice(i, 1);
+  renderAddons();
+  toast('تم الحذف');
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ═══════════════════════════════════════════════
+function exportConfig() {
+  // Clean up: ensure all radio items have IDs
+  RADIO_GROUPS.forEach(g => {
+    DATA[g].forEach((item, i) => {
+      if (!item.id) item.id = g + '_' + i + '_' + Date.now();
+    });
+  });
+
+  const json = JSON.stringify(DATA, null, 2);
+  const blob = new Blob([json], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchen-config.json';
+  a.click();
+  toast('تم تصدير kitchen-config.json \u2713');
+}
+
+function importConfig() {
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      DATA = parsed;
+      ensureDataStructure();
+      renderAll();
+      toast('تم الاستيراد بنجاح \u2713');
+    } catch {
+      toast('ملف غير صالح \u2717');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+
+
+// ═══════════════════════════════════════════════
+//  IMAGE MODAL
+// ═══════════════════════════════════════════════
+let modalTarget = null; // {group, index}
+let modalImgData = '';
+
+function openImgModal(g, i) {
+  modalTarget = {g, i};
+  const img = DATA[g][i].img || '';
+  document.getElementById('modal-url').value = img;
+  const prev = document.getElementById('modal-preview');
+  prev.innerHTML = img ? `<img src="${img}">` : 'لا توجد صورة';
+  modalImgData = img;
+  document.getElementById('img-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('img-modal').classList.remove('open');
+  modalTarget = null;
+}
+function previewModalImg() {
+  const url = document.getElementById('modal-url').value.trim();
+  const prev = document.getElementById('modal-preview');
+  if (url) {
+    prev.innerHTML = `<img src="${url}" onerror="this.parentElement.textContent='رابط غير صالح'">`;
+    modalImgData = url;
+  } else {
+    prev.textContent = 'لا توجد صورة';
+    modalImgData = '';
+  }
+}
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    modalImgData = ev.target.result;
+    document.getElementById('modal-preview').innerHTML = `<img src="${modalImgData}">`;
+    document.getElementById('modal-url').value = '(صورة محلية مرفوعة)';
+  };
+  reader.readAsDataURL(file);
+}
+function applyImg() {
+  if (!modalTarget) return;
+  DATA[modalTarget.g][modalTarget.i].img = modalImgData;
+  closeModal();
+  renderCardGroup(modalTarget.g);
+  toast('تم تحديث الصورة ✓');
+}
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
